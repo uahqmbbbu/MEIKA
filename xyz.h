@@ -84,7 +84,8 @@ inline auto readMultiFrameXYZ(const std::string &filename)
 
     span<const std::string> frame_span(frame_data);
     std::vector<system::System> systems(frame_number);
-    _Pragma("omp parallel for") for (size_t i = 0; i < frame_number; ++i) {
+#pragma omp parallel for
+    for (size_t i = 0; i < frame_number; ++i) {
         size_t pos = i * (atom_number + 2);
         systems[i] = readXYZ(frame_span.subspan(pos, atom_number));
     }

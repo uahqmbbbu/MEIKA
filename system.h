@@ -73,7 +73,18 @@ class System {
     }
 
     auto unitTransform(std::vector<real> &data, const double factor) -> void {
-        for (auto &d : data) { d *= factor; }
+#pragma omp parallel for
+        for (size_t i = 0; i < data.size(); ++i) { data[i] *= factor; }
+    }
+
+    auto unitTransform(std::vector<real> &x, std::vector<real> &y,
+                       std::vector<real> &z, const double factor) -> void {
+#pragma omp parallel for
+        for (size_t i = 0; i < x.size(); ++i) {
+            x[i] *= factor;
+            y[i] *= factor;
+            z[i] *= factor;
+        }
     }
 };
 
