@@ -170,7 +170,7 @@ inline auto eCoul(const double r2inv, const double q1, const double q2) -> doubl
     return q1 * q2 * std::sqrt(r2inv);
 }
 
-inline auto getLJCoeff(const FFParm &parm, const size_t p1, const size_t p2) -> std::pair<double, double> {
+inline auto getLJCoeff34(const FFParm &parm, const size_t p1, const size_t p2) -> std::pair<double, double> {
     const double iacj = parm.n_type * (parm.atom_type_index[p1] - 1);
     const double ic =
         parm.nonbonded_parm_index[iacj + parm.atom_type_index[p2] - 1];
