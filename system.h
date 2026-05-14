@@ -5,6 +5,7 @@
 #include "base.h"
 #include "span.h"
 
+#include <array>
 #include <string>
 #include <unordered_map>
 #include <vector>
@@ -14,6 +15,62 @@
 
 namespace meika {
 namespace system {
+
+enum class InitMode { Reserve, Resize };
+
+class Topology {
+  public:
+    int n;
+
+    std::vector<int> idx;
+    std::vector<std::string> name;
+    std::vector<int> type;
+    std::vector<std::string> element;
+
+    std::vector<std::string> chain;
+    std::vector<std::string> res_name;
+    std::vector<int> res_idx;
+    std::vector<int> ter_res;
+    std::vector<int> ter_idx;
+
+    std::vector<real> occupancy;
+    std::vector<real> temp_factor;
+    std::vector<real> charge;
+    std::vector<real> epsilon;
+    std::vector<real> sigma;
+
+    std::vector<std::array<int, 2>> expair;
+    std::vector<real> expair_charge_prod;
+    std::vector<real> expair_epsilon;
+    std::vector<real> expair_sigma;
+
+    Topology();
+    Topology(int num, InitMode mode);
+};
+
+class State {
+  public:
+    real ep;
+    real ek;
+    real et;
+
+    std::vector<real> x;
+    std::vector<real> y;
+    std::vector<real> z;
+    std::vector<real> gx;
+    std::vector<real> gy;
+    std::vector<real> gz;
+    std::vector<real> vx;
+    std::vector<real> vy;
+    std::vector<real> vz;
+
+    bool pbc = false;
+    std::array<real, 6> cell{};
+
+    State();
+    State(int num, InitMode mode);
+};
+
 class System {
   public:
     int n;
@@ -53,10 +110,17 @@ class System {
     std::vector<real> expair_epsilon;
     std::vector<real> expair_sigma;
 
-    enum InitMode { Reserve, Resize };
+    bool pbc = false;
+    std::array<real, 6> cell{};
+
+    using InitMode = meika::system::InitMode;
     System();
     System(const int num, const InitMode mode);
+    System(const Topology &topo, const State &state);
     ~System() = default;
+
+    auto topology() const -> Topology;
+    auto state() const -> State;
 
     template <typename T, typename M>
     auto extractMember(const std::vector<T> &vec,
@@ -97,6 +161,8 @@ inline System::System(const int num, const InitMode mode) {
     ep = 0.0;
     ek = 0.0;
     et = 0.0;
+    pbc = false;
+    cell = {};
 
 #define BATCH_APPLY(op)                                                        \
     idx.op(n);                                                                 \
@@ -106,15 +172,15 @@ inline System::System(const int num, const InitMode mode) {
     chain.op(n);                                                               \
     res_name.op(n);                                                            \
     res_idx.op(n);                                                             \
-    x.op(n);                                                                   \
-    y.op(n);                                                                   \
-    z.op(n);                                                                   \
-    gx.op(n);                                                                  \
-    gy.op(n);                                                                  \
-    gz.op(n);                                                                  \
-    vx.op(n);                                                                  \
-    vy.op(n);                                                                  \
-    vz.op(n);                                                                  \
+    x.op(num);                                                                 \
+    y.op(num);                                                                 \
+    z.op(num);                                                                 \
+    gx.op(num);                                                                \
+    gy.op(num);                                                                \
+    gz.op(num);                                                                \
+    vx.op(num);                                                                \
+    vy.op(num);                                                                \
+    vz.op(num);                                                                  \
     occupancy.op(n);                                                           \
     temp_factor.op(n);                                                         \
     charge.op(n);                                                              \
@@ -128,6 +194,148 @@ inline System::System(const int num, const InitMode mode) {
     }
 
 #undef BATCH_APPLY //
+}
+
+inline Topology::Topology() {}
+inline Topology::Topology(int num, InitMode mode) {
+    n = num;
+
+#define BATCH_TOPO(op)                                                         \
+    idx.op(n);                                                                 \
+    name.op(n);                                                                \
+    type.op(n);                                                                \
+    element.op(n);                                                             \
+    chain.op(n);                                                               \
+    res_name.op(n);                                                            \
+    res_idx.op(n);                                                             \
+    ter_res.op(n);                                                             \
+    ter_idx.op(n);                                                             \
+    occupancy.op(n);                                                           \
+    temp_factor.op(n);                                                         \
+    charge.op(n);                                                              \
+    epsilon.op(n);                                                             \
+    sigma.op(n);                                                               \
+    expair.op(n);                                                              \
+    expair_charge_prod.op(n);                                                  \
+    expair_epsilon.op(n);                                                      \
+    expair_sigma.op(n);
+
+    if (mode == InitMode::Reserve) {
+        BATCH_TOPO(reserve);
+    } else if (mode == InitMode::Resize) {
+        BATCH_TOPO(resize);
+    }
+
+#undef BATCH_TOPO
+}
+
+inline State::State() {}
+inline State::State(int num, InitMode mode) {
+    ep = 0.0;
+    ek = 0.0;
+    et = 0.0;
+    pbc = false;
+    cell = {};
+
+#define BATCH_STATE(op)                                                        \
+    x.op(num);                                                                 \
+    y.op(num);                                                                 \
+    z.op(num);                                                                 \
+    gx.op(num);                                                                \
+    gy.op(num);                                                                \
+    gz.op(num);                                                                \
+    vx.op(num);                                                                \
+    vy.op(num);                                                                \
+    vz.op(num);
+
+    if (mode == InitMode::Reserve) {
+        BATCH_STATE(reserve);
+    } else if (mode == InitMode::Resize) {
+        BATCH_STATE(resize);
+    }
+
+#undef BATCH_STATE
+}
+
+inline System::System(const Topology &topo, const State &state) {
+    n = topo.n;
+    ep = state.ep;
+    ek = state.ek;
+    et = state.et;
+    pbc = state.pbc;
+    cell = state.cell;
+
+    idx = topo.idx;
+    name = topo.name;
+    type = topo.type;
+    element = topo.element;
+    chain = topo.chain;
+    res_name = topo.res_name;
+    res_idx = topo.res_idx;
+    ter_res = topo.ter_res;
+    ter_idx = topo.ter_idx;
+    occupancy = topo.occupancy;
+    temp_factor = topo.temp_factor;
+    charge = topo.charge;
+    epsilon = topo.epsilon;
+    sigma = topo.sigma;
+    expair = topo.expair;
+    expair_charge_prod = topo.expair_charge_prod;
+    expair_epsilon = topo.expair_epsilon;
+    expair_sigma = topo.expair_sigma;
+
+    x = state.x;
+    y = state.y;
+    z = state.z;
+    gx = state.gx;
+    gy = state.gy;
+    gz = state.gz;
+    vx = state.vx;
+    vy = state.vy;
+    vz = state.vz;
+}
+
+inline auto System::topology() const -> Topology {
+    Topology t;
+    t.n = n;
+    t.idx = idx;
+    t.name = name;
+    t.type = type;
+    t.element = element;
+    t.chain = chain;
+    t.res_name = res_name;
+    t.res_idx = res_idx;
+    t.ter_res = ter_res;
+    t.ter_idx = ter_idx;
+    t.occupancy = occupancy;
+    t.temp_factor = temp_factor;
+    t.charge = charge;
+    t.epsilon = epsilon;
+    t.sigma = sigma;
+    t.expair = expair;
+    t.expair_charge_prod = expair_charge_prod;
+    t.expair_epsilon = expair_epsilon;
+    t.expair_sigma = expair_sigma;
+    return t;
+}
+
+inline auto System::state() const -> State {
+    State s;
+    s.ep = ep;
+    s.ek = ek;
+    s.et = et;
+    s.x = x;
+    s.y = y;
+    s.z = z;
+    s.gx = gx;
+    s.gy = gy;
+    s.gz = gz;
+    s.vx = vx;
+    s.vy = vy;
+    s.vz = vz;
+    s.pbc = pbc;
+    s.cell = cell;
+    return s;
 }
 
 inline auto atomicNumber2Element(const int type) -> std::string {
