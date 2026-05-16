@@ -30,7 +30,7 @@ static std::vector<int> resolveRange(const std::string &spec, AppState &st) {
         for (size_t i = 0; i < st.states[sid - 1].size(); ++i) idx.push_back(i);
         return idx;
     }
-    // Standard range: 1:100, 1:100:2, 1,3,5 — no max_count needed
+    // Standard range: 1:100, 1:100:2, 1,3,5 -- no max_count needed
     return parseIndices(spec, SIZE_MAX);
 }
 
@@ -78,7 +78,7 @@ int main(int argc, char *argv[]) {
     if (argc > 1) {
         std::string fn = argv[1];
         if (fn == "-h" || fn == "--help") {
-            std::cout << R"(MEIKA Convert — command language REPL
+            std::cout << R"(MEIKA Convert -- command language REPL
 
 Usage: meika-convert [file] < script
 
@@ -87,7 +87,7 @@ Otherwise the REPL reads commands from stdin until EOF or :q.
 
 Supported file formats: pdb, xyz, engrad, dcd
 
-─── system ───────────────────────────────────────────────────────────
+--- system -----------------------------------------------------------
   system load   <id> <file> [atoms <range>]
       Load a system from pdb/xyz/engrad file.
 
@@ -123,7 +123,7 @@ Supported file formats: pdb, xyz, engrad, dcd
   system change-state <id> <states_id> <frame>
       Replace coords/velocities/forces from a state frame.
 
-─── topo ──────────────────────────────────────────────────────────────
+--- topo --------------------------------------------------------------
   topo load    <id> <file> [atoms <range>]
       Load topology from pdb/xyz file.
 
@@ -145,7 +145,7 @@ Supported file formats: pdb, xyz, engrad, dcd
   topo delete  <id>
       Remove a topology.
 
-─── states ────────────────────────────────────────────────────────────
+--- states ------------------------------------------------------------
   states load    <id> <file> [dcd <topo|system> <ref_id>]
       Load trajectory from multi-frame XYZ or DCD file.
       DCD requires a topology or system reference for atom names.
@@ -172,7 +172,7 @@ Supported file formats: pdb, xyz, engrad, dcd
   states slice   <id> <src_id> <range>
       Extract selected frames into a new states collection.
 
-─── control flow ─────────────────────────────────────────────────────
+--- control flow -----------------------------------------------------
   for <var> in <range> do
     ...
   done
@@ -182,7 +182,7 @@ Supported file formats: pdb, xyz, engrad, dcd
   :q            Quit the REPL.
   # ...         Comment line (ignored).
 
-─── range syntax ─────────────────────────────────────────────────────
+--- range syntax -----------------------------------------------------
   1:100          indices 1 through 100 (1-based, inclusive)
   1:100:2        step by 2
   1,3,5,7        explicit list
